@@ -53,6 +53,7 @@
 /* === Inclusiones de cabeceras ============================================ */
 #include "FreeRTOS.h"
 #include "bsp.h"
+#include "semphr.h"
 #include "task.h"
 #include <stdbool.h>
 
@@ -75,6 +76,8 @@ void Blinking (void * parameters);
 
 board_t board;
 
+static SemaphoreHandle_t mutex;
+
 /* === Definiciones de variables externas ================================== */
 
 /* === Definiciones de funciones internas ================================== */
@@ -91,11 +94,13 @@ void Blinking(void * parameters) {
     parametros_t parametros = parameters;
 
     while (true) {
-        DigitalOutputToggle(parametros->led);
+        xSemaphoreTake(mutex, portMAX_DELAY);
+        DigitalOutputActivate(parametros->led);
         vTaskDelay(pdMS_TO_TICKS(parametros->periodo));
-        //DigitalOutputToggle(board->led_rojo);
-        //vTaskDelay(pdMS_TO_TICKS(500));
-        //Delay()
+        DigitalOutputDeactivate(parametros->led);
+        xSemaphoreGive(mutex);
+        vTaskDelay(pdMS_TO_TICKS(parametros->periodo));
+
     }
 }
 
@@ -132,6 +137,9 @@ int main(void) {
 
     static board_t board;
     static struct parametros_s parametros[2] ;
+
+    
+
     
     /* Inicializaciones y configuraciones de dispositivos */
     board = BoardCreate();
@@ -139,20 +147,18 @@ int main(void) {
     parametros[0].led=board->led_rojo;
     parametros[0].periodo = 500;
 
-    parametros[1].led=board->led_verde;
-    parametros[1].periodo = 250;
+    parametros[1].led=board->led_azul;
+    parametros[1].periodo = 500;
 
-    parametros[2].led=board->led_amarillo;
-    parametros[2].periodo = 750;
+    mutex = xSemaphoreCreateMutex();
+
+    //parametros[2].led=board->led_amarillo;
+//parametros[2].periodo = 750;
 
 
     /* Creación de las tareas */
-    //xTaskCreate(Blinking, "Baliza", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(Blinking, "Rojo", configMINIMAL_STACK_SIZE, &parametros[0], tskIDLE_PRIORITY + 1, NULL);
-    xTaskCreate(Blinking, "Verde", configMINIMAL_STACK_SIZE, &parametros[1], tskIDLE_PRIORITY + 2, NULL);
-    xTaskCreate(Blinking, "Amarillo", configMINIMAL_STACK_SIZE, &parametros[2], tskIDLE_PRIORITY + 3l, NULL);
-    xTaskCreate(Teclado, "TeclaUno", configMINIMAL_STACK_SIZE, (void *) board, tskIDLE_PRIORITY + 4, NULL);
-    xTaskCreate(Teclado, "TeclaDos", configMINIMAL_STACK_SIZE, (void *) board, tskIDLE_PRIORITY + 5, NULL);
+     xTaskCreate(Blinking, "Rojo", configMINIMAL_STACK_SIZE, &parametros[0], tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(Blinking, "Azul", configMINIMAL_STACK_SIZE, &parametros[1], tskIDLE_PRIORITY + 2, NULL);
     
     
     /* Arranque del sistema operativo */
