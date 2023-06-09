@@ -56,13 +56,13 @@
 #include "semphr.h"
 #include "task.h"
 #include <stdbool.h>
-#include "event_group.h"
+#include "event_groups.h"
 
 /* === Definicion y Macros ================================================= */
 #define COUNT_DELAY 1000000
 
-#define BOTON_PRPBAR_APRETADO (1 << 0)
-#define BOTON_PRPBAR_LIBERADO (1 << 4)
+#define BOTON_PROBAR_APRETADO (1 << 0)
+#define BOTON_PROBAR_LIBERADO (1 << 4)
 
 #define BOTON_PRENDER_APRETADO (1 << 1)
 #define BOTON_PRENDER_LIBERADO (1 << 5)
@@ -89,11 +89,11 @@ void Blinking (void * parameters);
 
 board_t board;
 
-static SemaphoreHandle_t mutex;
+//static SemaphoreHandle_t mutex;
 
 /* === Definiciones de variables externas ================================== */
 
-EventGroupHanlde_t eventos_teclas;
+EventGroupHandle_t eventos_teclas;
 
 
 /* === Definiciones de funciones internas ================================== */
@@ -111,11 +111,11 @@ void Azul(void * parameters) {
 	EventBits_t eventos;
 	
 	while (true) {
-		eventos = xEventGroup WaitBits(eventos_teclas, BOTON_PROBAR_APRETADO | BOTON_PRPBAR_LIBERADO, pdTRUE, pdFALSE, portMAX_DELAY);
+		eventos = xEventGroupWaitBits(eventos_teclas, BOTON_PROBAR_APRETADO | BOTON_PROBAR_LIBERADO, pdTRUE, pdFALSE, portMAX_DELAY);
 		if ( eventos & BOTON_PROBAR_APRETADO) {
-			DigitalOutputActivate(borad->led_azul);
+			DigitalOutputActivate(board->led_azul);
 		} else if ( eventos & BOTON_PROBAR_LIBERADO) {
-			DigitalOutputDeactivate(borad->led_azul);
+			DigitalOutputDeactivate(board->led_azul);
 		}
 	
 	
@@ -127,11 +127,11 @@ void Azul(void * parameters) {
 	}
 }
 
-void Roja(void * parameters) { 
+void Rojo(void * parameters) { 
 	board_t board = parameters;
 	while (true) {
-		if (xEventGroup WaitBits(eventos_teclas, BOTON_CAMBIAR_APRETADO, pdTRUE, pdFALSE, portMAX_DELAY)) {
-			DigitalOutputActivate(borad->led_rojo);
+		if (xEventGroupWaitBits(eventos_teclas, BOTON_CAMBIAR_APRETADO, pdTRUE, pdFALSE, portMAX_DELAY)) {
+			DigitalOutputActivate(board->led_rojo);
 		}
 		//if (DigitalInputGetStat(board_boton_cambiar)) {
 		//	DigitalOutputActivate(borad->led_rojo);
@@ -139,15 +139,15 @@ void Roja(void * parameters) {
 	}
 }
 
-void Amarilla(void * parameters) {
+void Amarillo(void * parameters) {
 	board_t board = parameters;
 	while (true) {
-		if (xEventGroup WaitBits(eventos_teclas, BOTON_PRENDER_APRETADO, pdTRUE, pdFALSE, portMAX_DELAY)) {
-			DigitalOutputActivate(borad->led_rojo);
+		if (xEventGroupWaitBits(eventos_teclas, BOTON_PRENDER_APRETADO, pdTRUE, pdFALSE, portMAX_DELAY)) {
+			DigitalOutputActivate(board->led_rojo);
 		}
 		
-		if (xEventGroup WaitBits(eventos_teclas, BOTON_PRENDER_LIBERADO, pdTRUE, pdFALSE, portMAX_DELAY)) {
-			DigitalOutputActivate(borad->led_rojo);
+		if (xEventGroupWaitBits(eventos_teclas, BOTON_PRENDER_LIBERADO, pdTRUE, pdFALSE, portMAX_DELAY)) {
+			DigitalOutputActivate(board->led_rojo);
 		}
 
 		//if (DigitalInputGetStat(board_boton_prender)) {
@@ -160,35 +160,35 @@ void Amarilla(void * parameters) {
 }
 void Verde(void * parameters) {
 	while (true) {
-		DigitalOutputToggle(board->led_verde)
-		vTaskDelay(pd_MS_To_Ticket(150));
+		DigitalOutputToggle(board->led_verde);
+		vTaskDelay(pdMS_TO_TICKS(150));
 	}
 }
 
 
 void Teclado(void * parameters) {
     board_t board = parameters;
-	int divisor=0;
+	//int divisor = 0;
 	while (true) {
-		if DigitalInputActivate(borad->boton_cambiar)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_CAMBIAR_APRETADO)
-		} else if DigitalInputDeactivate(borad->boton_cambiar)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_CAMBIAR_LIBERADO)
+		if (DigitalInputHasActivated(board->boton_cambiar)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_CAMBIAR_APRETADO);
+		} else if (DigitalInputHasDeactivated(board->boton_cambiar)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_CAMBIAR_LIBERADO);
 		}
-		if DigitalInputActivate(borad->boton_apagar)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_APAGAR_APRETADO)
-		} else if DigitalInputDeactivate(borad->boton_apagar)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_APAGAR_LIBERADO)
+		if (DigitalInputHasActivated(board->boton_apagar)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_APAGAR_APRETADO);
+		} else if (DigitalInputHasDeactivated(board->boton_apagar)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_APAGAR_LIBERADO);
 		}
-		if DigitalInputActivate(borad->boton_prender)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_PRENDER_APRETADO)
-		} else if DigitalInputDeactivate(borad->boton_prender)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_PRENDER_LIBERADO)
+		if (DigitalInputHasActivated(board->boton_prender)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_PRENDER_APRETADO);
+		} else if (DigitalInputHasDeactivated(board->boton_prender)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_PRENDER_LIBERADO);
 		}
-		if DigitalInputActivate(borad->boton_prueba)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_PROBAR_APRETADO)
-		} else if DigitalInputDeactivate(borad->boton_prueba)) {
-			xEventGroupSetBits(evento_teclas ,BOTON_PROBAR_LIBERADO)
+		if (DigitalInputHasActivated(board->boton_prueba)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_PROBAR_APRETADO);
+		} else if (DigitalInputHasDeactivated(board->boton_prueba)) {
+			xEventGroupSetBits(eventos_teclas ,BOTON_PROBAR_LIBERADO);
 		}
 		
 		
@@ -221,7 +221,7 @@ void Teclado(void * parameters) {
 		vTaskDelay(pd_MS_To_Ticket(150));
 		*/
 		
-    }
+    
 }
 
 
@@ -237,9 +237,9 @@ void Teclado(void * parameters) {
  */
 int main(void) {
 	
-	borad_t board = BoardCreate();
+	board_t board = BoardCreate();
 	
-	eventos_teclas ?= xEventGroupCreate();
+	eventos_teclas = xEventGroupCreate();
     /* Creación de las tareas  */
 	
 	xTaskCreate(Teclado, "Teclado", configMINIMAL_STACK_SIZE, (void*) board, tskIDLE_PRIORITY + 1, NULL);
